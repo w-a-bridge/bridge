@@ -11,12 +11,24 @@ class MySupercluster {
     this.geojsonTask = undefined
   }
 
-  async loadData(geos, tagIds, categoryIds, bridgeFilter) {
+  async loadData(geos, tagIds, categoryIds, bridgeFilter, categoryLookup) {
     if (tagIds && tagIds.length && tagIds.length > 0) {
       geos = geos.filter(i => i.tags.some(t1 => tagIds.some(t2 => t2 === t1)))
     }
     if (categoryIds && categoryIds.length && categoryIds.length > 0) {
-      geos = geos.filter(i => i.categories.some(t1 => categoryIds.some(t2 => t2 === t1)))
+      // 桥梁分类，同一个大类之内取并集，不同大类之间取交集。同一个大类放在同一个group里。
+      const groups = {}
+      for (const categoryId of categoryIds) {
+        const category = categoryLookup[categoryId]
+        if (!groups[category.ancestor_id]) {
+          groups[category.ancestor_id] = []
+        }
+        groups[category.ancestor_id].push(category.id)
+      }
+      for (const ancestorId in groups) {
+        const groupCategoryIds = groups[ancestorId]
+        geos = geos.filter(i => i.categories.some(t1 => groupCategoryIds.some(t2 => t2 === t1)))
+      }
     }
     if (bridgeFilter) {
       geos = geos.filter(i => i.name.includes(bridgeFilter))
@@ -38,6 +50,12 @@ class MySupercluster {
     })
 
     this.index = this._createSupercluster(this.features)
+
+    const result = {}
+    if (geos.length === 1) {
+      result.singleGeo = geos[0]
+    }
+    return result
   }
 
   getClusterExpansionZoom(clusterId) {
