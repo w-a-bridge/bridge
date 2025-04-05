@@ -58,10 +58,6 @@ class MySupercluster {
     return result
   }
 
-  getClusterExpansionZoom(clusterId) {
-    return this.index.getClusterExpansionZoom(clusterId)
-  }
-
   getCluster(bbox, zoom) {
     return this.index.getClusters(bbox, zoom)
   }
